@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useChat } from '../../contexts/ChatContext';
 import { formatChatTime } from '../../utils/formatters';
 import { IconButton } from '../ui/IconButton';
-import * as mockApi from '../../services/mockApi';
+import * as chatApi from '../../services/chatApi';
 import type { Chat } from '../../contexts/ChatContext';
 
 interface HistoryItemProps {
@@ -17,16 +17,16 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({ chat, isActive, onSele
   const { t } = useLanguage();
   const { dispatch } = useChat();
 
-  const handlePin = (e: React.MouseEvent) => {
+  const handlePin = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const next = !chat.pinned;
-    mockApi.pinChat(chat.id, next);
+    await chatApi.pinChat(chat.id, next);
     dispatch({ type: 'PIN_CHAT', payload: { id: chat.id, pinned: next } });
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    mockApi.deleteChat(chat.id);
+    await chatApi.deleteChat(chat.id);
     dispatch({ type: 'DELETE_CHAT', payload: chat.id });
   };
 

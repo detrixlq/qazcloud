@@ -15,12 +15,18 @@ export interface DiagnoseDetailsResponse {
   sections: DetailsSection[];
 }
 
+const REQUEST_TIMEOUT_MS = 120000; // 2 min — embedding + LLM can take 30–60+ s
+
 async function request<T>(path: string, body: object): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: controller.signal,
   });
+  clearTimeout(id);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);

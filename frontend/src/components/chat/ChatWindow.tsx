@@ -4,8 +4,9 @@ import { Message } from './Message';
 import { DiagnosisMessage } from './DiagnosisMessage';
 import { TypingIndicator } from './TypingIndicator';
 import { InputBar, type InputBarRef } from './InputBar';
-import * as mockApi from '../../services/mockApi';
+import * as chatApi from '../../services/chatApi';
 import * as api from '../../services/api';
+import { previewFromMessages } from '../../utils/formatters';
 import type { Message as MessageType } from '../../contexts/ChatContext';
 
 function nextMessageId(): string {
@@ -13,7 +14,7 @@ function nextMessageId(): string {
 }
 
 export const ChatWindow: React.FC = () => {
-  const { messages, isThinking, currentChatId, dispatch } = useChat();
+  const { messages, isThinking, currentChatId, chats, dispatch } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<InputBarRef>(null);
 
@@ -24,7 +25,7 @@ export const ChatWindow: React.FC = () => {
   const handleSend = async (text: string) => {
     let chatId = currentChatId;
     if (!chatId) {
-      const chat = mockApi.createChat();
+      const chat = await chatApi.createChat();
       chatId = chat.id;
       dispatch({ type: 'ADD_CHAT', payload: chat });
       dispatch({ type: 'SET_CURRENT_CHAT', payload: chatId });
@@ -37,7 +38,13 @@ export const ChatWindow: React.FC = () => {
       timestamp: new Date(),
     };
     dispatch({ type: 'APPEND_MESSAGE', payload: userMsg });
-    mockApi.addMessageToChat(chatId, userMsg);
+    await chatApi.addMessageToChat(chatId, userMsg);
+
+    const chat = chats.find((c) => c.id === chatId);
+    if (chat && (chat.title === 'New chat' || chat.title === 'New Chat')) {
+      const preview = previewFromMessages([...messages, userMsg]);
+      dispatch({ type: 'UPDATE_CHAT_TITLE', payload: { id: chatId, title: preview } });
+    }
 
     dispatch({ type: 'SET_THINKING', payload: true });
     try {
@@ -69,7 +76,13 @@ export const ChatWindow: React.FC = () => {
         }),
       };
       dispatch({ type: 'APPEND_MESSAGE', payload: assistantMsg });
-      mockApi.addMessageToChat(chatId!, assistantMsg);
+      await chatApi.addMessageToChat(chatId!, assistantMsg);
+
+      if (primary) {
+        const title = primary.diagnosis;
+        dispatch({ type: 'UPDATE_CHAT_TITLE', payload: { id: chatId!, title } });
+        chatApi.updateChatTitle(chatId!, title).catch(() => {});
+      }
     } catch (err) {
       const errorContent = err instanceof Error ? err.message : 'Ошибка при обращении к серверу. Проверьте, что бэкенд запущен.';
       const assistantMsg: MessageType = {
@@ -79,7 +92,7 @@ export const ChatWindow: React.FC = () => {
         timestamp: new Date(),
       };
       dispatch({ type: 'APPEND_MESSAGE', payload: assistantMsg });
-      mockApi.addMessageToChat(chatId!, assistantMsg);
+      await chatApi.addMessageToChat(chatId!, assistantMsg);
     } finally {
       dispatch({ type: 'SET_THINKING', payload: false });
       setTimeout(() => inputBarRef.current?.focus(), 0);

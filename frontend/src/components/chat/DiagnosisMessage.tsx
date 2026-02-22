@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Bot, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getDiagnosisAnalytics } from '../../services/mockApi';
 import type { Message as MessageType } from '../../contexts/ChatContext';
 
 interface DiagnosisMessageProps {
@@ -19,8 +18,6 @@ export const DiagnosisMessage: React.FC<DiagnosisMessageProps> = ({ message }) =
   const hasBackendDetails = Boolean(detailsSections?.length);
   const [detailsOpen, setDetailsOpen] = useState(hasBackendDetails);
   const [secondaryOpen, setSecondaryOpen] = useState<Record<number, boolean>>({});
-  const [analytics, setAnalytics] = useState<{ specialists: string[]; procedures: string[]; medications: string[] } | null>(null);
-  const [analyticsCode, setAnalyticsCode] = useState<string | null>(null);
 
   const diag = message.diagnosisData?.diagnoses ?? [];
   const primary = diag.find((d) => d.rank === 1);
@@ -30,16 +27,9 @@ export const DiagnosisMessage: React.FC<DiagnosisMessageProps> = ({ message }) =
     setSecondaryOpen((o) => ({ ...o, [rank]: !o[rank] }));
   };
 
-  const openDetails = async () => {
+  const openDetails = () => {
     if (!primary) return;
     setDetailsOpen((o) => !o);
-    if (detailsOpen) return;
-    if (hasBackendDetails) return;
-    if (!analytics || analyticsCode !== primary.icd10_code) {
-      const data = await getDiagnosisAnalytics(primary.icd10_code);
-      setAnalytics(data);
-      setAnalyticsCode(primary.icd10_code);
-    }
   };
 
   const handleOpenProtocol = () => {
@@ -113,31 +103,16 @@ export const DiagnosisMessage: React.FC<DiagnosisMessageProps> = ({ message }) =
                 </div>
               ))}
             </div>
-          ) : analytics && (
-            <div className="mt-2 space-y-2 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-600">
-              <p className="font-medium">{t.recommendedSpecialists}</p>
-              <ul className="list-inside list-disc text-gray-600 dark:text-gray-400">{analytics.specialists.map((s) => <li key={s}>{s}</li>)}</ul>
-              <p className="font-medium">{t.necessaryProcedures}</p>
-              <ul className="list-inside list-disc text-gray-600 dark:text-gray-400">{analytics.procedures.map((p) => <li key={p}>{p}</li>)}</ul>
-              <p className="font-medium">{t.medications}</p>
-              <ul className="list-inside list-disc text-gray-600 dark:text-gray-400">{analytics.medications.map((m) => <li key={m}>{m}</li>)}</ul>
-            </div>
+          ) : (
+            <p className="mt-2 rounded-lg border border-gray-200 p-3 text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+              {t.detailedAnalysisUnavailable}
+            </p>
           ))}
           <p className="mt-3 text-sm italic text-gray-600 dark:text-gray-400">
             {t.closingMessage}
           </p>
         </div>
-        {primary && (
-          <button
-            type="button"
-            onClick={handleOpenProtocol}
-            className="flex items-center gap-2 self-start rounded-lg px-3 py-1.5 text-sm text-primary hover:bg-primary/10 transition-colors"
-            title={protocolButtonLabel}
-          >
-            <ExternalLink size={18} />
-            {protocolButtonLabel}
-          </button>
-        )}
+        
       </div>
     </div>
   );

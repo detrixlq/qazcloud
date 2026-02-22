@@ -1,2 +1,25 @@
-test/
+# Dependencies and env
 node_modules/
+.env
+model/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.db
+model/chats.db
+
+# Build / artifacts (build per DOCKER.md)
+model/rag_store/index.faiss
+frontend/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Test
+test/

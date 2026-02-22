@@ -11,6 +11,7 @@ export interface LanguageStrings {
   today: string;
   detailedAnalysis: string;
   detailedAnalysisOfDiagnosis: string;
+  detailedAnalysisUnavailable: string;
   recommendedSpecialists: string;
   necessaryProcedures: string;
   medications: string;
@@ -34,6 +35,7 @@ const en: LanguageStrings = {
   today: 'Today',
   detailedAnalysis: 'Detailed Analysis',
   detailedAnalysisOfDiagnosis: 'Detailed analysis of the most likely diagnosis',
+  detailedAnalysisUnavailable: 'Details for this diagnosis are not available',
   recommendedSpecialists: 'Recommended specialists',
   necessaryProcedures: 'Necessary procedures / tests',
   medications: 'Medications',
@@ -56,6 +58,7 @@ const ru: LanguageStrings = {
   today: 'Сегодня',
   detailedAnalysis: 'Подробный анализ',
   detailedAnalysisOfDiagnosis: 'Подробный анализ наиболее вероятного диагноза',
+  detailedAnalysisUnavailable: 'Подробности по этому диагнозу недоступны',
   recommendedSpecialists: 'Рекомендуемые специалисты',
   necessaryProcedures: 'Необходимые процедуры / анализы',
   medications: 'Лекарства',

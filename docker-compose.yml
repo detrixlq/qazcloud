@@ -1,0 +1,39 @@
+# Production stack: frontend (nginx + static) + backend (FastAPI + RAG)
+services:
+  backend:
+    build:
+      context: ./model
+      dockerfile: Dockerfile
+    container_name: protocol-backend
+    env_file:
+      - .env
+    volumes:
+      - backend_data:/app/data
+    environment:
+      - CORS_ORIGINS=http://localhost,http://127.0.0.1
+      - CHATS_DB_PATH=/app/data/chats.db
+      # OPENAI_API_KEY can be set here or in .env (required for /diagnose)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    working_dir: /app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: protocol-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  backend_data:

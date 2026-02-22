@@ -41,6 +41,7 @@ type ChatAction =
   | { type: 'NEW_CHAT' }
   | { type: 'DELETE_CHAT'; payload: string }
   | { type: 'PIN_CHAT'; payload: { id: string; pinned: boolean } }
+  | { type: 'UPDATE_CHAT_TITLE'; payload: { id: string; title: string } }
   | { type: 'LOAD_CHAT'; payload: { id: string; messages: Message[] } }
   | { type: 'ADD_CHAT'; payload: Chat };
 
@@ -89,6 +90,11 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       });
       return { ...state, chats };
     }
+    case 'UPDATE_CHAT_TITLE': {
+      const { id, title } = action.payload;
+      const chats = state.chats.map((c) => (c.id === id ? { ...c, title } : c));
+      return { ...state, chats };
+    }
     case 'LOAD_CHAT':
       return {
         ...state,
@@ -112,9 +118,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(chatReducer, initialState);
 
   useEffect(() => {
-    import('../services/mockApi').then(({ getChatHistory }) => {
+    import('../services/chatApi').then(({ getChatHistory }) => {
       getChatHistory().then((chats) => {
         dispatch({ type: 'SET_CHATS', payload: chats });
+      }).catch(() => {
+        dispatch({ type: 'SET_CHATS', payload: [] });
       });
     });
   }, []);
