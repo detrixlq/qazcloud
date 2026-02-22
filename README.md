@@ -1,44 +1,43 @@
-# ProtoCol — Medical protocol chat (RAG + Docker)
+# ProtoCol — Medical protocol chat
 
-Web app for symptom-based diagnosis suggestions using RAG over clinical protocols. Frontend (React + Vite) and backend (FastAPI + sentence-transformers + OpenAI) run together via Docker Compose.
+A web app that suggests possible diagnoses from symptom descriptions using RAG over clinical protocols. Built with React (frontend), FastAPI + sentence-transformers + OpenAI (backend), and Docker Compose.
 
 ---
 
-## How to run this project (with model inside + Docker Compose)
+## Requirements
 
-### 1. Prerequisites
+- **Docker** and **Docker Compose** installed on your machine
+- **OpenAI API key** (used by the backend for the diagnosis LLM)
+- Enough disk space and RAM for the backend (ML models and FAISS index)
 
-- **Docker** and **Docker Compose** installed.
-- **OpenAI API key** (for the LLM used in diagnosis).
+---
 
-### 2. Clone or open the project
+## How to run it on your computer
+
+### 1. Clone the repository
 
 ```bash
-cd "path/to/Datasaur 2025"
+git clone https://github.com/YOUR_USERNAME/REPO_NAME.git
+cd REPO_NAME
 ```
 
-(If you cloned from GitHub, use the folder you cloned into.)
+Replace `YOUR_USERNAME/REPO_NAME` with the actual repo URL (e.g. `johndoe/protocol-medical-chat`).
 
-### 3. Create `.env` in the project root
+### 2. Add your OpenAI API key
 
-In the same folder as `docker-compose.yml`, create a file named `.env` with:
+In the project root (the folder that contains `docker-compose.yml`), create a file named `.env` with:
 
 ```env
 OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
-Do not commit `.env` (it is in `.gitignore`).
+Use your own key from [OpenAI](https://platform.openai.com/api-keys). Do not share or commit this file.
 
-### 4. RAG index (model) inside the project
+### 3. Build the RAG index
 
-The backend needs a pre-built RAG index in `model/rag_store/`:
+The backend needs a pre-built search index. It is not included in the repo, so you must build it once.
 
-- **`index.faiss`** — FAISS index (built from protocols).
-- **`chunks.jsonl`** — Chunk metadata (created by the same build).
-
-**If you already have these files** in `model/rag_store/`, skip to step 5.
-
-**If you need to build them** (e.g. after a fresh clone, or when `index.faiss` is missing):
+From the project root:
 
 ```bash
 cd model
@@ -47,28 +46,34 @@ python rag_med.py build --jsonl protocols_corpus.jsonl --out-dir rag_store --enc
 cd ..
 ```
 
-This creates `model/rag_store/index.faiss` and `model/rag_store/chunks.jsonl`. The first run can take a while (encoding all chunks). The encoder must be `ai-forever/sbert_large_nlu_ru` to match the API.
+This creates `model/rag_store/index.faiss` and updates `model/rag_store/chunks.jsonl`. The first run can take 10–30 minutes depending on your machine. The encoder name must stay as above to match the API.
 
-### 5. Run with Docker Compose
+### 4. Start the app with Docker Compose
 
-From the **project root** (where `docker-compose.yml` is):
+From the project root:
 
 ```bash
 docker compose up -d --build
 ```
 
-- First build can take **10–20 minutes** (ML models are downloaded into the image).
-- The frontend waits for the backend to be healthy; then the app is available at **http://localhost** (port 80).
-- To watch backend logs until it is ready:  
-  `docker compose logs -f backend`  
-  Wait until you see **`API ready.`**
+- The **first build** may take 10–20 minutes while ML models are downloaded into the image.
+- The frontend container waits for the backend to be healthy. When the backend is ready, the app is served at **http://localhost** (port 80).
 
-### 6. Use the app
+To see when the backend is ready:
+
+```bash
+docker compose logs -f backend
+```
+
+Wait until you see **`API ready.`** in the logs. Then open **http://localhost** in your browser.
+
+### 5. Use the app
 
 - Open **http://localhost** in your browser.
-- Chats are stored by client IP in the backend (SQLite in a Docker volume).
+- Enter symptoms; the app returns possible diagnoses and protocol-based details.
+- Chats are stored per client (by IP) in a SQLite database inside the backend container.
 
-### 7. Stop
+### 6. Stop the app
 
 ```bash
 docker compose down
@@ -76,62 +81,21 @@ docker compose down
 
 ---
 
-## Summary of what lives where
+## Project layout
 
-| Item              | Location / note                                      |
-|-------------------|------------------------------------------------------|
-| Frontend          | `frontend/` (React, Vite)                            |
-| Backend API       | `model/` (FastAPI, RAG, OpenAI)                     |
-| RAG artifacts     | `model/rag_store/` — need `index.faiss` + `chunks.jsonl` |
-| Env / secrets     | `.env` in project root (not in Git)                 |
-| Docker            | `docker-compose.yml` in project root                 |
+| Part        | Location              | Description                          |
+|------------|------------------------|--------------------------------------|
+| Frontend   | `frontend/`            | React + Vite UI                      |
+| Backend    | `model/`               | FastAPI, RAG, sentence-transformers   |
+| RAG data   | `model/rag_store/`     | FAISS index + chunks (you build these) |
+| Docker     | `docker-compose.yml`   | Runs frontend + backend together     |
 
-More detail: see **DOCKER.md** (ports, volumes, env vars, GPU).
+For more (ports, volumes, env vars, GPU): see **DOCKER.md**.
 
 ---
 
-## Push the whole project to GitHub
+## Troubleshooting
 
-Run these in the **project root** (same folder as `docker-compose.yml`). Replace `YOUR_USERNAME` and `REPO_NAME` with your GitHub username and repository name (e.g. `johndoe/datasaur-2025`).
-
-**First time (no Git yet):**
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: ProtoCol medical chat with RAG and Docker"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
-git push -u origin main
-```
-
-**If the folder is already a Git repo:**
-
-```bash
-git add .
-git commit -m "Initial commit: ProtoCol medical chat with RAG and Docker"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
-git push -u origin main
-```
-
-**If the remote `origin` already exists and you only want to change the URL:**
-
-```bash
-git remote set-url origin https://github.com/YOUR_USERNAME/REPO_NAME.git
-git push -u origin main
-```
-
-**Before pushing:**
-
-1. Create the repository on GitHub (New repository, no README/.gitignore).
-2. Do **not** commit `.env` or `model/.env` (they are in `.gitignore`).
-3. `model/rag_store/index.faiss` is ignored; anyone who clones the repo must build the RAG index (step 4 above) before running Docker.
-
-**One-line copy-paste** (replace `YOUR_USERNAME/REPO_NAME`):
-
-```bash
-git init && git add . && git commit -m "Initial commit: ProtoCol medical chat with RAG and Docker" && git branch -M main && git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git && git push -u origin main
-```
-
-(If the repo already exists, use `git remote set-url origin https://github.com/YOUR_USERNAME/REPO_NAME.git` instead of `git remote add origin ...`.)
+- **502 Bad Gateway** — Backend is still starting or failed. Check `docker compose logs backend`. Ensure `model/rag_store/index.faiss` exists (step 3) and `.env` has a valid `OPENAI_API_KEY`.
+- **Missing index.faiss** — Run step 3 from the project root. The build script creates the index and chunks.
+- **Slow first request** — The first diagnosis can be slow while models run; later requests are faster.
